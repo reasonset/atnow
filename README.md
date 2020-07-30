@@ -21,4 +21,4 @@ Store and view you own murmur.
 # Advanced
 
 * You can open murmuring window with HUPping this process.
-* You can find this process's pid in `/var/run/atnow-$uid.pid` file.
+* You can find this process's pid in `$home/.atnow.pid` file.
