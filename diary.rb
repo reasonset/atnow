@@ -25,7 +25,7 @@ end
 
 unless day
   day = `zenity --calendar --date-format="%Y/%m_%d"`
-  if !$?.success? or day !~ %r:^\d+/%d+_%d+$:
+  if !$?.success? or day !~ %r:^\d+/\d+_\d+$:
     exit 1
   else
     day = day.strip

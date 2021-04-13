@@ -19,6 +19,7 @@ It takes those keys:
 |`diary_dir`|Base directory for diary entries (must be exist.)|
 |`pid_dir`|Temporaryr directory for put pid file. Used `/var/run/user/$UID` by default.|
 |`atnow2diary`|If true, atnow outputs entry even today's diary file.|
+|`editor`|Editor program used by diary.rb.|
 
 # Usage
 
