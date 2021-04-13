@@ -11,6 +11,7 @@ CONFIG_BASE = {
   "diary_dir" => File.join(`xdg-user-dir DOCUMENTS`.strip, "diary"),
   "pid_dir" => "/var/run/user/#{Process::UID.eid}",
   "atnow2diary" => false,
+  "diary_app" => nil,
 }
 
 if File.exist? CONFIG_FILE
@@ -22,7 +23,6 @@ end
 DOC_DIR = CONFIG["atnow_dir"]
 PID_DIR = CONFIG["pid_dir"]
 
-CURRENT_TIME = Time.now.strftime("%Y-%m-%d\t%H:%M:%S")
 
 Dir.mkdir DOC_DIR unless File.exist? DOC_DIR
 File.open("#{DOC_DIR}/now", "w") {|f| nil } unless File.exist? "#{DOC_DIR}/now"
@@ -52,11 +52,13 @@ update_menu.()
 
 Signal.trap(:HUP) do
   text=`yad --entry --title="Your Tweet" --text="What's Happen?" --image=gtk-dialog-question --width=450`
+  current_time = Time.now.strftime("%Y-%m-%d\t%H:%M:%S")
+
   if text.length > 0
     File.open("#{DOC_DIR}/now" ,"a") do |f|
       begin
         f.flock(File::LOCK_EX)
-        f.puts([CURRENT_TIME, text.tr('|`', "/'")].join("\t"))
+        f.puts([current_time, text.tr('|`', "/'")].join("\t"))
       ensure
         f.flock(File::LOCK_UN)
       end
@@ -65,21 +67,46 @@ Signal.trap(:HUP) do
   end
 
   if CONFIG["atnow2diary"]
-    today = Time.now.strftime("%Y/%m_%d")
-    FileUtils.mkdir_p(File.joinb(CONFIG["diary_dir"], File.dirname(today))) unless File.exist? File.join(CONFIG["diary_dir"], File.dirname(today))
-    File.open(File.join(CONFIG["diary_dir"], today), "w") {} unless File.exist?(File.join(CONFIG["diary_dir"], today))
-    File.open(File.join(CONFIG["diary_dir"], today), "r+") do |f|
-      content = f.read
+    case CONFIG["diary_app"]
+    when "rednotebook"
+      # Write to RedNotebook
+      filename = File.join(ENV["HOME"], ".rednotebook", "data", Time.now.strftime("%Y-%m.txt"))
+      day = Time.now.day
+      book = File.exist?(filename) ? YAML.load(File.read(filename)) : Hash.new
+      content = (book[day] && book[day]["text"]) || ""
       newline = (content.include?("\r\n") ? "\r\n" : "\n")
       unless content[-(newline.length * 2) ..] == newline + newline
         if content[-(newline.length) ..] == newline
-          f.print newline
+          content += newline
         else
-          f.print(newline, newline)
+          content += newline + newline
         end
       end
 
-      f.printf("%s -- %s %s%s", text.strip, CURRENT_TIME.sub("\t", " "), newline, newline)
+      content += sprintf("%s -- %s %s%s", text.strip, current_time.sub("\t", " "), newline, newline)
+
+      book[day] ||= {}
+      book[day]["text"] = content
+
+      File.open(filename, "w") {|f| YAML.dump(book, f)}
+    else
+      # Write to Atnow Diary
+      today = Time.now.strftime("%Y/%m_%d")
+      FileUtils.mkdir_p(File.joinb(CONFIG["diary_dir"], File.dirname(today))) unless File.exist? File.join(CONFIG["diary_dir"], File.dirname(today))
+      File.open(File.join(CONFIG["diary_dir"], today), "w") {} unless File.exist?(File.join(CONFIG["diary_dir"], today))
+      File.open(File.join(CONFIG["diary_dir"], today), "r+") do |f|
+        content = f.read
+        newline = (content.include?("\r\n") ? "\r\n" : "\n")
+        unless content[-(newline.length * 2) ..] == newline + newline
+          if content[-(newline.length) ..] == newline
+            f.print newline
+          else
+            f.print(newline, newline)
+          end
+        end
+
+        f.printf("%s -- %s %s%s", text.strip, current_time.sub("\t", " "), newline, newline)
+      end
 
     end
 

@@ -20,6 +20,7 @@ It takes those keys:
 |`pid_dir`|Temporaryr directory for put pid file. Used `/var/run/user/$UID` by default.|
 |`atnow2diary`|If true, atnow outputs entry even today's diary file.|
 |`editor`|Editor program used by diary.rb.|
+|`diary_app`|If `atnow2diary` is enabled, atnow write to its format instead of atnow diary file. You can use `rednotebook` or `nil`|
 
 # Usage
 
